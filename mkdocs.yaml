@@ -1,0 +1,14 @@
+site_name: app-template-api
+site_description: 'APP_DESCRIPTION_GOES_HERE'
+site_url: 'https://engineering.zenbusiness.team'
+repo_url: 'https://github.com/zenbusiness/app-template-api'
+edit_uri: edit/main/docs/
+
+plugins:
+  - techdocs-core
+
+nav:
+  - Home: README.md
+  - Local Go Development: LocalGoDevelopment.md
+  - Configuring .netrc: netrc.md
+  - Setting Environment Variables: SettingEnvVars.md

@@ -1,0 +1,57 @@
+name: Go Unit Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: false # tests should always run when the code changes
+
+      - name: Display Go Version
+        run: go version
+      #      https://github.com/mvdan/github-actions-golang/blob/master/README.md#how-do-i-install-private-modules
+      #      https://blog.fabianmendez.dev/how-to-use-private-go-module-in-github-actions
+
+      - name: Configure git for private modules
+        env:
+          TOKEN: ${{ secrets.GH_REPO_READ_TOKEN }}
+          GOPRIVATE: github.com/zenbusiness/*
+          ENABLE_DEBUG_LOGGING: false
+        run: |
+          git config --global url."https://${TOKEN}@github.com/".insteadOf "https://github.com/"
+
+      - name: Install all dependencies
+        run: |
+          go mod download
+
+      - name: Run tests
+        run: |
+          ALL_GO_MOD_DIRS=$(find ../ -not -path "./vendor/*" -type f -name 'go.mod' -exec dirname {} \;)
+          set -e
+          for dir in $ALL_GO_MOD_DIRS; do
+              (cd "${dir}" && \
+                go test -v -race ./... -coverprofile=./cover.tmp && \
+                grep -Ev "main.go" cover.tmp > cover.out && \
+                rm cover.tmp); 
+          done
+
+      - name: go-test-coverage
+        uses: vladopajic/go-test-coverage@v2.7.1
+        with:
+          profile: cover.out
+          local-prefix: github.com/zenbusiness/go-service-template
+          threshold-file: 80
+          threshold-package: 80
+          threshold-total: 90

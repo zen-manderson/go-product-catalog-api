@@ -1,0 +1,60 @@
+# See list of built-in substitutions at
+# https://cloud.google.com/container-builder/docs/configuring-builds/substitute-variable-values
+substitutions:
+  _ENVIRONMENT: dev
+  _GCLOUD_PROJECT: zen-dev-166315
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/124977349912/secrets/charts_github_deploy_key_publish/versions/latest
+      env: CHARTS_GITHUB_DEPLOY_KEY
+    - versionName: projects/124977349912/secrets/go_gh_read_all_token/versions/latest
+      env: go_gh_read_all_token
+
+steps:
+  - name: "gcr.io/cloud-builders/gcloud"
+    id: "Get access token for GAR access and write to key file [gcloud]"
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        gcloud auth print-access-token > /workspace/access_token
+  # if this step happens to fail because we're using the latest tag,
+  # ensure there are no breaking changes upstream:
+  # https://github.com/GoogleContainerTools/kaniko/releases
+  - id: "Build and push docker image [kaniko]"
+    name: "gcr.io/kaniko-project/executor:latest"
+    secretEnv:
+      - go_gh_read_all_token
+    env:
+      - "RELEASE_VERSION=${SHORT_SHA}"
+      - "RELEASE_BRANCH=${BRANCH_NAME}"
+      - "RELEASE_TAG=${TAG_NAME}"
+      - "REPO_NAME=${REPO_NAME}"
+      - "ENVIRONMENT=${_ENVIRONMENT}"
+    args:
+      - --dockerfile=/workspace/Dockerfile
+      - --context=dir:///workspace
+      - --destination=us-central1-docker.pkg.dev/${_GCLOUD_PROJECT}/zen-docker-images/${REPO_NAME}:$COMMIT_SHA
+      - --destination=us-central1-docker.pkg.dev/${_GCLOUD_PROJECT}/zen-docker-images/${REPO_NAME}:$SHORT_SHA
+      - --destination=us-central1-docker.pkg.dev/${_GCLOUD_PROJECT}/zen-docker-images/${REPO_NAME}:latest
+      - --build-arg=RELEASE_VERSION
+      - --build-arg=RELEASE_BRANCH
+      - --build-arg=RELEASE_TAG
+      - --build-arg=ENVIRONMENT
+      - --build-arg=REPO_NAME
+      - --build-arg=go_gh_read_all_token
+      - --log-timestamp=true
+      - --cache=true
+  - id: Update image.tag in Chart
+    name: us-central1-docker.pkg.dev/zen-dev-166315/zen-docker-images/cloudbuild-image-tag-updater:latest
+    secretEnv:
+      - CHARTS_GITHUB_DEPLOY_KEY
+    env:
+      - "COMMIT_SHA=$COMMIT_SHA"
+      - "ENVIRONMENT=$_ENVIRONMENT"
+      - "REPO_NAME=$REPO_NAME"
+tags:
+  - ${REPO_NAME}
+  - ${_ENVIRONMENT}
+timeout: 1800s

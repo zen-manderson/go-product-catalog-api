@@ -1,0 +1,25 @@
+# See list of built-in substitutions at
+# https://cloud.google.com/container-builder/docs/configuring-builds/substitute-variable-values
+substitutions:
+  _ENVIRONMENT: prod
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/124977349912/secrets/charts_github_deploy_key_publish/versions/latest
+      env: CHARTS_GITHUB_DEPLOY_KEY
+
+steps:
+  - id: Update image.tag in Chart
+    name: us-central1-docker.pkg.dev/zen-dev-166315/zen-docker-images/cloudbuild-image-tag-updater:latest
+    secretEnv:
+      - CHARTS_GITHUB_DEPLOY_KEY
+    env:
+      - "COMMIT_SHA=$COMMIT_SHA"
+      - "ENVIRONMENT=$_ENVIRONMENT"
+      - "REPO_NAME=$REPO_NAME"
+
+tags:
+  - ${REPO_NAME}
+  - ${_ENVIRONMENT}
+
+timeout: 1800s

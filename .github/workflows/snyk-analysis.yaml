@@ -1,0 +1,22 @@
+name: Code Analysis
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_call:
+    secrets:
+      SNYK_TOKEN:
+        required: true
+
+jobs:
+  analyze:
+    name: 'Analyze'
+    concurrency:
+      group: ${{ github.head_ref || github.run_id }}-code-analysis
+      cancel-in-progress: true
+    uses: zenbusiness/actions/.github/workflows/snyk-analysis.yaml@main
+    secrets: inherit

@@ -1,0 +1,27 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: app-template-api
+  description: 'APP_DESCRIPTION_GOES_HERE'
+  annotations:
+    github.com/project-slug: zenbusiness/app-template-api
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - golang
+    - template
+  links:
+    # Replace this link with the url of your team's public channel
+    - url: https://zenbusinesspbc.slack.com/archives/C02CH8QDH51
+      title: "#guild-go"
+      icon: chat
+
+    # Replace this with anything else you might want to appear on your docs
+    - url: https://github.com/zenbusiness/nodejs-application-template
+      title: Golang Application Template
+      icon: github
+      # available icons: https://github.com/backstage/backstage/blob/01a0a39521ab1c2132e972b8263d519e1a553a77/packages/app-defaults/src/defaults/icons.tsx#L39-L60
+spec:
+  type: website
+  owner: pf-idea # CHANGEME
+  lifecycle: production
+  system: zenbusiness-com

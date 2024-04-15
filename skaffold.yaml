@@ -1,0 +1,54 @@
+apiVersion: skaffold/v2beta26
+kind: Config
+metadata:
+  name: nodejs-service-template
+build:
+  artifacts:
+  - image: app-template-api
+    context: "./"
+    docker:
+      dockerfile: scripts/local/api/Dockerfile
+    sync:
+      infer:
+        - '**/*.js'
+  - image: app-template-api-db
+    context: scripts/local/db
+    docker:
+      dockerfile: Dockerfile
+deploy:
+  kubectl:
+    manifests:
+      - "./scripts/k8s/db-deployment-service.yaml"
+      - "./scripts/k8s/api-deployment-service.yaml"
+  kubeContext: minikube
+portForward:
+  - resourceType: Service
+    resourceName: app-template-api-service
+    port: 8082
+  - resourceType: Service
+    resourceName: app-template-api-db-service
+    port: 5432
+profiles:
+  - name: initializeVolume
+    deploy:
+      kubectl:
+        manifests:
+          - "./scripts/k8s/api-persistentvolumeclaim.yaml"
+      kubeContext: minikube
+    patches:
+      - op: remove
+        path: /build
+      - op: remove
+        path: /portForward
+  - name: db-only
+    build:
+      artifacts:
+        - image: app-template-api-db
+          context: scripts/local/db
+          docker:
+            dockerfile: Dockerfile
+    deploy:
+      kubectl:
+        manifests:
+          - "./scripts/k8s/db-deployment-service.yaml"
+      kubeContext: minikube
